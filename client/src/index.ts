@@ -1,77 +1,77 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
-import { PageExtensionData } from '../../shared/PageExtensionData'
+import { PageExtensionData } from 'shared'
+import { whileCard } from './whileCard'
+import { submitAvailabilitiesFactory } from './submitAvailabilitiesFactory'
 
 void ((window as ZettelExtensions.WindowWithStarter).$starter = function (api) {
   this.while('activated', function ({ activatedApi }) {
     this.while('signedIn', function ({ signedInApi }) {
       this.while('pagePanel', function ({ pagePanelApi }) {
-        if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return
+        if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // This is redundant and should be removed later
 
         const quickActionRegistration = this.register(
           pagePanelApi.registry.quickAction(() => ({
-            title: 'My extension',
-            description: 'My extension description',
+            title: api.header.name,
+            description: api.header.description,
             avatarUrl: api.header.avatarUrl,
-            disabled: true,
-            switchChecked: false,
             async onClick() {
-              activatedApi.access.showMessage('My extension', 'This is a message from my extension!', {
-                variant: 'success',
-              })
-            },
-            async onToggleSwitch(checked) {
-              quickActionRegistration.reference.current?.update({
-                disabled: true,
-              })
-              await setPageExtensionData(checked ? { enabled: true } : undefined)
-              quickActionRegistration.reference.current?.update({
-                disabled: false,
-              })
+              setQuickActionDisabled(true)
+              await activate()
+              setQuickActionDisabled(false)
             },
           }))
         )
+        function setQuickActionDisabled(disabled: boolean): void {
+          quickActionRegistration.reference.current?.update({ disabled })
+        }
 
         const loadingIndicatorRegistration = this.register(
-          pagePanelApi.registry.loadingIndicator(() => `Updating ${api.header.name} status...`),
+          pagePanelApi.registry.loadingIndicator(() => 'Please wait...'),
+          { initiallyInactive: true }
+        )
+        function setLoadingIndicatorVisible(visible: boolean): void {
+          if (visible) {
+            loadingIndicatorRegistration.activate()
+          } else {
+            loadingIndicatorRegistration.deactivate()
+          }
+        }
+
+        const statusReadonlyRegistration = this.register(
+          pagePanelApi.registry.status(() => ({
+            hideCardOwners: true,
+          })),
           { initiallyInactive: true }
         )
 
-        const tipMessageRegistration = this.register(
-          pagePanelApi.registry.message<PageExtensionData>(() => ({
-            initialState: undefined,
-            render: ({ renderContext, un }) => ({
-              encapsulated: true,
-              html: !renderContext.state
-                ? '<p>Loading...</p>'
-                : `
-<div>
-  <p style="display: flex; align-items: center; gap: 10px;">
-    <img src="${api.getFileUrl({ filePath: 'idea.png' })}" alt="tip" />
-    This is a tip about my extension!
-  </p>
-  <p>
-    This will show up when the extension is enabled on the page.
-  </p>
-</div>
-`,
-            }),
-            variant: 'information',
-            hidden: true,
-          }))
+        const submitAvailabilities = submitAvailabilitiesFactory.call(
+          this,
+          { activatedApi, pagePanelApi },
+          { setQuickActionDisabled, setLoadingIndicatorVisible }
         )
+
+        let activating = false
+        const activate = async (command?: string): Promise<void> => {
+          if (activating) return
+          try {
+            activating = true
+            await submitAvailabilities(command)
+          } finally {
+            activating = false
+          }
+        }
 
         this.register(
           pagePanelApi.watch(
             data => data.page.extensionData as PageExtensionData,
             pageExtensionData => {
-              quickActionRegistration.reference.current?.update({
-                disabled: false,
-                switchChecked: Boolean(pageExtensionData?.enabled),
-              })
-              tipMessageRegistration.reference.current?.update({
-                initialState: pageExtensionData,
-                hidden: !pageExtensionData,
-              })
+              if (pageExtensionData?.enabled) {
+                statusReadonlyRegistration.activate()
+                if (pageExtensionData?.enabled) {
+                  signedInApi.access.setPageExtensionData<PageExtensionData>(pagePanelApi.target.pageId, undefined)
+                  activate(pageExtensionData.command)
+                }
+              }
             },
             {
               initialCallback: true,
@@ -79,20 +79,20 @@ void ((window as ZettelExtensions.WindowWithStarter).$starter = function (api) {
           )
         )
 
-        async function setPageExtensionData(newPageExtensionData: PageExtensionData): Promise<void> {
-          try {
-            loadingIndicatorRegistration.activate()
-            await signedInApi.access.setPageExtensionData<PageExtensionData>(
-              pagePanelApi.target.pageId,
-              newPageExtensionData
-            )
-          } catch {
-            // Do nothing!
-          } finally {
-            loadingIndicatorRegistration.deactivate()
-          }
-        }
+        whileCard.bind(this)({ activatedApi })
       })
+    })
+
+    this.while('publicPageView', function ({ publicPageViewApi }) {
+      if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // This is redundant and should be removed later
+
+      whileCard.bind(this)({ activatedApi })
+    })
+
+    this.while('publicCardView', function ({ publicCardViewApi }) {
+      if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // This is redundant and should be removed later
+
+      whileCard.bind(this)({ activatedApi })
     })
   })
 })

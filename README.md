@@ -1,7 +1,8 @@
-# Zettel Extension Seed
+# Zettel Module - Scheduler
 
-This is a seed project to speed-up developing extensions for [Zettel](https://app.zettel.ooo).
-You can read more about the platform [here](http://zettel.ooo).
+Describe your availabilities and this module helps you schedule a time with someone.
+
+It is created out of the [Zettel Extension Seed](https://github.com/zettelooo/zettel-extension-seed) project template.
 
 The repository consists of two projects:
 
@@ -50,7 +51,5 @@ The repository consists of two projects:
      server$ npm start     # For production
      ```
      > **Note:** You can specify on what port it will serve your API by prepending `PORT=4000` to the commands above, by default it uses the port `4000`.
-
-Both projects are filled with some dummy implementations to show-case how to setup things, feel free to modify it, or even start your own projects following the prctices used in this seed project.
 
 For more information, please [contact the development](mailto:ahs502@gmail.com) team.

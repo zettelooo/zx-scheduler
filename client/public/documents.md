@@ -1,1 +1,1 @@
-Your extension documentation in Markdown format.
+Describe your availabilities and this module helps you schedule a time with someone.
