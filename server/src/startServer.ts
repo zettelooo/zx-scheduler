@@ -4,12 +4,12 @@ import cors from 'cors'
 import express from 'express'
 import morgan from 'morgan'
 import path from 'path'
-import { ExtractAvailabilities, ExtractDuration, Slot, isValidEmail } from 'shared'
+import { CardExtensionData, ExtractAvailabilities, ExtractDuration, Slot, isValidEmail } from 'shared'
 import { extractAvailabilities } from './extractAvailabilities'
 import { extractDuration } from './extractDuration'
-import { generateId } from './generateId'
 import { restApiClient } from './restApiClient'
 import { sendMail } from './sendMail'
+import { composeCardText } from './composeCardText'
 
 export function startServer(): void {
   const port = Number(process.env.PORT || 4000)
@@ -63,8 +63,13 @@ export function startServer(): void {
       }
       const now = Date.now()
       await Promise.all(
-        devidedAvailableSlots.map(async (slot, index, array) =>
-          restApiClient.addCard({
+        devidedAvailableSlots.map(async (slot, index, array) => {
+          const cardExtensionData: CardExtensionData = {
+            processed: true,
+            accepted: true,
+            ...slot,
+          }
+          await restApiClient.addCard({
             card: {
               ownerUserId: page.ownerUserId,
               pageId,
@@ -72,10 +77,11 @@ export function startServer(): void {
                 timestampMicroseconds: now,
                 offset: index - array.length,
               }),
-              blocks: Slot.generateBlocks(slot, { type: 'not reserved' }, generateId),
+              text: composeCardText(cardExtensionData) ?? '',
+              extensionData: cardExtensionData,
             },
           })
-        )
+        })
       )
       res.json({ accepted: true })
     } catch (error) {
@@ -98,6 +104,10 @@ export function startServer(): void {
         res.sendStatus(404)
         return
       }
+      if (!card.extensionData?.accepted) {
+        res.sendStatus(400)
+        return
+      }
       const {
         users: [ownerUser],
       } = await restApiClient.getUsers({ userIds: [card.ownerUserId] })
@@ -106,12 +116,16 @@ export function startServer(): void {
         return
       }
       let emailSuccess = false
-      const { slotStatus } = Slot.parseBlocks(card.blocks)
-      if (slotStatus.type === 'not reserved') {
+      if (!card.extensionData.reservedBy) {
+        const cardExtensionData: CardExtensionData = {
+          ...card.extensionData,
+          reservedBy: { name, email },
+        }
         await restApiClient.editCard({
           cardId,
           updates: {
-            blocks: Slot.updateBlocksSlotStatus(card.blocks, { type: 'reserved', name, email }),
+            text: composeCardText(cardExtensionData) ?? '',
+            extensionData: cardExtensionData,
           },
         })
         try {

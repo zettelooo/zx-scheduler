@@ -1,9 +1,11 @@
+import { Timestamp } from '@zettelooo/commons'
 import { Slot } from './Slot'
 
 export namespace ExtractAvailabilities {
   export interface Input {
     readonly description: string
-    readonly now: string
+    /** The same as `Date.prototype.toString()` */
+    readonly currentTimestampStringified: string
   }
 
   export type Output =
@@ -12,6 +14,6 @@ export namespace ExtractAvailabilities {
       }
     | {
         readonly accepted: true
-        readonly availableSlots: readonly Slot.Unparsed[]
+        readonly availableSlots: readonly Slot[]
       }
 }

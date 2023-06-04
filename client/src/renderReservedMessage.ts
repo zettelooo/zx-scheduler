@@ -1,12 +1,15 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
-import { Slot } from 'shared'
+import { CardExtensionData } from 'shared'
 
-export const renderReservedMessage: ZettelExtensions.Helper<'cardBlock', 'cardBlock', [slotStatus: Slot.Status], void> =
-  function ({ cardBlockApi }, slotStatus) {
-    this.register(
-      cardBlockApi.registry.appendedHtmlContent(() => ({
-        initialState: undefined,
-        render: ({ renderContext, un }) => ({
+export const renderReservedMessage: ZettelExtensions.Helper<'cardBlock', 'cardBlock', [], void> = function ({
+  cardBlockApi,
+}) {
+  this.register(
+    cardBlockApi.registry.appendedHtmlContent(() => ({
+      initialState: undefined,
+      render: ({ renderContext, un }) => {
+        const cardExtensionData = cardBlockApi.data.card.extensionData as CardExtensionData
+        return {
           html: `
 <style>
   #${un.root} {
@@ -17,11 +20,12 @@ export const renderReservedMessage: ZettelExtensions.Helper<'cardBlock', 'cardBl
 <div id="${un.root}">
   ✔️ This time is reserved by
   <strong>
-    ${(slotStatus.type === 'reserved' && slotStatus.name) || ''}
+    ${(cardExtensionData?.accepted && cardExtensionData.reservedBy?.name) || ''}
   </strong>
 </div>
 `,
-        }),
-      }))
-    )
-  }
+        }
+      },
+    }))
+  )
+}

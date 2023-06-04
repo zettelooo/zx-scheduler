@@ -1,5 +1,5 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
-import { Slot, formatDate, parseDate } from 'shared'
+import { Slot, stringifyDate } from 'shared'
 import { extractAvailabilities } from './services/extractAvailabilities'
 import { extractDuration } from './services/extractDuration'
 import { sendAvailabilities } from './services/sendAvailabilities'
@@ -21,10 +21,9 @@ export const submitAvailabilitiesFactory: ZettelExtensions.Helper<
     try {
       setQuickActionDisabled(true)
 
-      const nowTimestamp = Date.now()
-      const now = formatDate(nowTimestamp)
+      const currentTimestamp = Date.now()
 
-      let availableSlots: readonly Slot.Unparsed[] | null = null
+      let availableSlots: readonly Slot[] | null = null
       {
         const askForAvailabilities = (): Promise<string | undefined> =>
           new Promise(resolve => {
@@ -49,7 +48,10 @@ export const submitAvailabilitiesFactory: ZettelExtensions.Helper<
         while (availabilitiesDescription) {
           if (!availableSlots) {
             setLoadingIndicatorVisible(true)
-            const output = await extractAvailabilities({ description: availabilitiesDescription, now })
+            const output = await extractAvailabilities({
+              description: availabilitiesDescription,
+              currentTimestampStringified: stringifyDate(currentTimestamp),
+            })
             if (this.disposed) return
             setLoadingIndicatorVisible(false)
             if (output.accepted) {
@@ -106,8 +108,8 @@ export const submitAvailabilitiesFactory: ZettelExtensions.Helper<
       const dividedAvailableSlots = availableSlots.flatMap<Slot>(slot => {
         const dividedSlots: Slot[] = []
         for (
-          let fromTimestamp = Math.max(parseDate(slot.from), nowTimestamp);
-          fromTimestamp <= parseDate(slot.to) - durationMilliseconds + COVERED_MISSING_MINUTES * 60 * 1000;
+          let fromTimestamp = Math.max(slot.fromTimestamp, currentTimestamp);
+          fromTimestamp <= slot.toTimestamp - durationMilliseconds + COVERED_MISSING_MINUTES * 60 * 1000;
           fromTimestamp += durationMilliseconds
         ) {
           dividedSlots.push({
@@ -118,10 +120,12 @@ export const submitAvailabilitiesFactory: ZettelExtensions.Helper<
         return dividedSlots
       })
 
-      setLoadingIndicatorVisible(true)
-      await sendAvailabilities(pagePanelApi.target.pageId, dividedAvailableSlots, durationMinutes)
-      await new Promise(resolve => setTimeout(resolve, 2 * 1000))
-      setLoadingIndicatorVisible(false)
+      if (dividedAvailableSlots.length > 0) {
+        setLoadingIndicatorVisible(true)
+        await sendAvailabilities(pagePanelApi.target.pageId, dividedAvailableSlots, durationMinutes)
+        await new Promise(resolve => setTimeout(resolve, 2 * 1000))
+        setLoadingIndicatorVisible(false)
+      }
     } catch (error) {
       console.error(error)
       activatedApi.access.showMessage(

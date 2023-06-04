@@ -1,7 +1,8 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
 import { renderInviteButton } from './renderInviteButton'
 import { renderReservedMessage } from './renderReservedMessage'
-import { Slot } from 'shared'
+import { CardExtensionData } from 'shared'
+import { renderSlotData } from './renderSlotData'
 
 export const whileCard: ZettelExtensions.Helper<
   'pagePanel' | 'publicPageView' | 'publicCardView',
@@ -10,15 +11,14 @@ export const whileCard: ZettelExtensions.Helper<
   void
 > = function ({ activatedApi }) {
   this.while('card', function ({ cardApi }) {
-    let parsedBlocks = Slot.parseBlocks(cardApi.data.card.blocks)
-
+    let cardExtensionData = cardApi.data.card.extensionData as CardExtensionData
     this.register(
       cardApi.watch(
-        data => Slot.parseBlocks(data.card.blocks),
-        (newValue, oldValue) => {
-          parsedBlocks = newValue
+        data => cardApi.data.card.extensionData as CardExtensionData,
+        newCardExtensionData => {
+          cardExtensionData = newCardExtensionData
           cardBlockLifeSpanRegistration.deactivate()
-          if (parsedBlocks.slotStatus.type !== 'unknown') {
+          if (newCardExtensionData?.processed) {
             cardBlockLifeSpanRegistration.activate()
           }
         },
@@ -29,10 +29,7 @@ export const whileCard: ZettelExtensions.Helper<
     const cardBlockLifeSpanRegistration = this.register(
       () =>
         this.while('cardBlock', function ({ cardBlockApi }) {
-          if (
-            cardBlockApi.target.blockId !== cardBlockApi.data.card.blocks[cardBlockApi.data.card.blocks.length - 1]?.id
-          )
-            return
+          if (!cardExtensionData?.accepted) return
 
           this.register(
             cardBlockApi.registry.displayOptions(() => ({
@@ -40,17 +37,16 @@ export const whileCard: ZettelExtensions.Helper<
             }))
           )
 
-          switch (parsedBlocks.slotStatus.type) {
-            case 'not reserved':
-              renderInviteButton.call(this, { activatedApi, cardBlockApi })
-              break
-
-            case 'reserved':
-              renderReservedMessage.call(this, { cardBlockApi }, parsedBlocks.slotStatus)
-              break
+          if (cardBlockApi.data.block.id === cardBlockApi.data.card.blocks[0]?.id) {
+            renderSlotData.bind(this)({ cardBlockApi })
+            if (cardExtensionData.reservedBy) {
+              renderReservedMessage.bind(this)({ cardBlockApi })
+            } else {
+              renderInviteButton.bind(this)({ activatedApi, cardBlockApi })
+            }
           }
         }).finish,
-      { initiallyInactive: parsedBlocks.slotStatus.type === 'unknown' }
+      { initiallyInactive: !cardExtensionData?.accepted }
     )
   })
 }

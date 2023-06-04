@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@zettelooo/extension-api/dist/manifest-json-schema.json",
 
   "appId": "scheduler",
-  "version": "2.10.5",
+  "version": "3.0.0",
   "name": "Scheduler",
   "description": "Schedule your meetings",
   "aiDescription": "Automate scheduling and make it easy to find a time to meet. Schedule appointments, meetings, and events. Share one's availability with others. Let people schedule meetings on one's website or public calendar.",
