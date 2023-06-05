@@ -52,15 +52,20 @@ If the timezone is not specified in the description, consider the times are in U
     temperature: 0,
   })
   const answer = chatCompletion.data.choices[0].message?.content ?? ''
+
   try {
-    const lines = answer.split('\n').filter(Boolean)
-    const properties: Record<string, string> = {}
-    lines.forEach(line => {
-      const match = line.match(/^\[(.+)\]:(.*)$/)
-      if (match) {
-        properties[match[1]] = match[2].trim()
-      }
-    })
+    const properties = answer
+      .split('\n')
+      .filter(Boolean)
+      .reduce((current, line) => {
+        const match = line.match(/^\[(.+)\]:\s(.+)$/)
+        if (match) {
+          const [, key, value] = match
+          current[key] = value.trim()
+        }
+        return current
+      }, {} as Partial<Record<string, string>>)
+
     const fromTimestamp = properties['From Timestamp'] && new Date(properties['From Timestamp']).getTime()
     const toTimestamp = properties['To Timestamp'] && new Date(properties['To Timestamp']).getTime()
     if (!fromTimestamp || !toTimestamp)
@@ -76,8 +81,8 @@ If the timezone is not specified in the description, consider the times are in U
       ...(properties['Reserved By Name'] || properties['Reserved By Email']
         ? {
             reservedBy: {
-              name: properties['Reserved By Name'].trim(),
-              email: properties['Reserved By Email'].trim(),
+              name: properties['Reserved By Name']?.trim() ?? '',
+              email: properties['Reserved By Email']?.trim() ?? '',
             },
           }
         : {}),
