@@ -1,13 +1,27 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
 import { PageExtensionData } from 'shared'
 import { whileCard } from './whileCard'
-import { submitAvailabilitiesFactory } from './submitAvailabilitiesFactory'
+import { submitAvailabilities } from './submitAvailabilities'
 
 void ((window as ZettelExtensions.WindowWithStarter).$starter = function (api) {
   this.while('activated', function ({ activatedApi }) {
     this.while('signedIn', function ({ signedInApi }) {
       this.while('pagePanel', function ({ pagePanelApi }) {
-        if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // This is redundant and should be removed later
+        if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // TODO: This is redundant and should be removed later
+
+        let activating = false
+        const activate = async (command?: string): Promise<void> => {
+          if (activating) return
+          try {
+            activating = true
+            await submitAvailabilities.bind(this)(
+              { activatedApi, pagePanelApi },
+              { setQuickActionDisabled, setLoadingIndicatorVisible, description: command }
+            )
+          } finally {
+            activating = false
+          }
+        }
 
         const quickActionRegistration = this.register(
           pagePanelApi.registry.quickAction(() => ({
@@ -44,23 +58,6 @@ void ((window as ZettelExtensions.WindowWithStarter).$starter = function (api) {
           { initiallyInactive: true }
         )
 
-        const submitAvailabilities = submitAvailabilitiesFactory.call(
-          this,
-          { activatedApi, pagePanelApi },
-          { setQuickActionDisabled, setLoadingIndicatorVisible }
-        )
-
-        let activating = false
-        const activate = async (command?: string): Promise<void> => {
-          if (activating) return
-          try {
-            activating = true
-            await submitAvailabilities(command)
-          } finally {
-            activating = false
-          }
-        }
-
         this.register(
           pagePanelApi.watch(
             data => data.page.extensionData as PageExtensionData,
@@ -84,13 +81,13 @@ void ((window as ZettelExtensions.WindowWithStarter).$starter = function (api) {
     })
 
     this.while('publicPageView', function ({ publicPageViewApi }) {
-      if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // This is redundant and should be removed later
+      if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // TODO: This is redundant and should be removed later
 
       whileCard.bind(this)({ activatedApi })
     })
 
     this.while('publicCardView', function ({ publicCardViewApi }) {
-      if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // This is redundant and should be removed later
+      if (!this.scopes.includes(ZettelExtensions.Scope.Page)) return // TODO: This is redundant and should be removed later
 
       whileCard.bind(this)({ activatedApi })
     })

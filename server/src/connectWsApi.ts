@@ -25,6 +25,7 @@ export function connectWsApi(): void {
                 await restApiClient.setCardExtensionData({
                   cardId: card.id,
                   data: await extractCardExtensionData(card),
+                  senderRegistrationKey: connection.getRegistrationKey(),
                 })
               })
             )
@@ -35,6 +36,7 @@ export function connectWsApi(): void {
                 if (!card.extensionData) return
                 await restApiClient.setCardExtensionData({
                   cardId: card.id,
+                  senderRegistrationKey: connection.getRegistrationKey(),
                 })
               })
             )
@@ -51,11 +53,13 @@ export function connectWsApi(): void {
               await restApiClient.setCardExtensionData({
                 cardId: mutation.newCard.id,
                 data: await extractCardExtensionData(mutation.newCard),
+                senderRegistrationKey: connection.getRegistrationKey(),
               })
             }
           } else if (mutation.newCard.extensionData) {
             await restApiClient.setCardExtensionData({
               cardId: mutation.newCard.id,
+              senderRegistrationKey: connection.getRegistrationKey(),
             })
           }
           break
