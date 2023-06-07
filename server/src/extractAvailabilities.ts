@@ -1,6 +1,6 @@
+import { Timestamp } from '@zettelooo/commons'
 import { ExtractAvailabilities } from 'shared'
 import { openAiApi } from './openAiApi'
-import { Timestamp } from '@zettelooo/commons'
 
 export async function extractAvailabilities(input: ExtractAvailabilities.Input): Promise<ExtractAvailabilities.Output> {
   const chatCompletion = await openAiApi.createChatCompletion({

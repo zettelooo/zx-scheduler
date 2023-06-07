@@ -1,17 +1,28 @@
+import { ZettelServices } from '@zettelooo/api-server'
 import { ZettelTypes } from '@zettelooo/api-types'
 import { generateSequence } from '@zettelooo/commons'
 import cors from 'cors'
 import express from 'express'
 import morgan from 'morgan'
 import path from 'path'
-import { CardExtensionData, ExtractAvailabilities, ExtractDuration, Slot, isValidEmail } from 'shared'
+import {
+  CardExtensionData,
+  ExtractAvailabilities,
+  ExtractDuration,
+  PageExtensionData,
+  Slot,
+  isValidEmail,
+} from 'shared'
+import { composeCardText } from './composeCardText'
 import { extractAvailabilities } from './extractAvailabilities'
+import { extractCardUpdates } from './extractCardUpdates'
 import { extractDuration } from './extractDuration'
 import { restApiClient } from './restApiClient'
 import { sendMail } from './sendMail'
-import { composeCardText } from './composeCardText'
 
-export function startServer(): void {
+export function startServer(
+  connection: ZettelServices.Extension.Ws.GetUpdates<PageExtensionData, CardExtensionData>
+): void {
   const port = Number(process.env.PORT || 4000)
 
   const app = express()
@@ -80,6 +91,7 @@ export function startServer(): void {
               text: composeCardText(cardExtensionData) ?? '',
               extensionData: cardExtensionData,
             },
+            senderRegistrationKey: connection.getRegistrationKey(),
           })
         })
       )
@@ -117,16 +129,13 @@ export function startServer(): void {
       }
       let emailSuccess = false
       if (!card.extensionData.reservedBy) {
-        const cardExtensionData: CardExtensionData = {
-          ...card.extensionData,
-          reservedBy: { name, email },
-        }
         await restApiClient.editCard({
           cardId,
-          updates: {
-            text: composeCardText(cardExtensionData) ?? '',
-            extensionData: cardExtensionData,
-          },
+          updates: await extractCardUpdates(card, {
+            ...card.extensionData,
+            reservedBy: { name, email },
+          }),
+          senderRegistrationKey: connection.getRegistrationKey(),
         })
         try {
           const time = (card.blocks[0] as ZettelTypes.Extension.Entity.Block<ZettelTypes.Model.Block.Type.Paragraph>)
@@ -138,13 +147,13 @@ export function startServer(): void {
             name,
             `Scheduled meeting by Zettel module: Scheduler`,
             `
-  <p>Hi, ${name}!</p>
-  <p>${ownerUser.name} invited you to a call on the following time:</p>
-  <p>• <strong>${time}</strong></>
-  <p>You may follow up from <a href="mailto:${ownerUser.email}">this email address</a>.</p>
-  <p>All the best,</p>
-  <p>Zettel module; Scheduler.</p>
-  `
+<p>Hi, ${name}!</p>
+<p>${ownerUser.name} invited you to a call on the following time:</p>
+<p>• <strong>${time}</strong></>
+<p>You may follow up from <a href="mailto:${ownerUser.email}">this email address</a>.</p>
+<p>All the best,</p>
+<p>Zettel module; Scheduler.</p>
+`
           )
           emailSuccess = success
         } catch {

@@ -1,4 +1,3 @@
-import { Timestamp } from '@zettelooo/commons'
 import { Slot } from './Slot'
 
 export type CardExtensionData =

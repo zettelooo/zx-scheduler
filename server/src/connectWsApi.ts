@@ -1,11 +1,11 @@
 import { ZettelServices } from '@zettelooo/api-server'
-import { CardExtensionData } from 'shared'
+import { CardExtensionData, PageExtensionData } from 'shared'
 import { ZETTEL_EXTENSION_ACCESS_KEY, ZETTEL_TARGET_ENVIRONMENT } from './constants'
 import { extractCardExtensionData } from './extractCardExtensionData'
 import { restApiClient } from './restApiClient'
 
-export function connectWsApi(): void {
-  const connection = new ZettelServices.Extension.Ws.GetUpdates({
+export function connectWsApi(): ZettelServices.Extension.Ws.GetUpdates<PageExtensionData, CardExtensionData> {
+  const connection = new ZettelServices.Extension.Ws.GetUpdates<PageExtensionData, CardExtensionData>({
     extensionWsApi: { targetEnvironment: ZETTEL_TARGET_ENVIRONMENT },
     extensionAccessKey: ZETTEL_EXTENSION_ACCESS_KEY,
     startInitially: true,
@@ -67,4 +67,5 @@ export function connectWsApi(): void {
       }
     },
   })
+  return connection
 }
