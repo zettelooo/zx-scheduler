@@ -1,7 +1,7 @@
 // See: https://www.zoho.com/zeptomail/help/api/email-sending.html
 
 declare module 'zeptomail' {
-  export declare class SendMailClient {
+  export class SendMailClient {
     constructor(options: SendMailClient.Options)
 
     sendMail(request: SendMailClient.SendMail.Request): Promise<SendMailClient.SendMail.Response>

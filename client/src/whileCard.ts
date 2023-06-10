@@ -1,22 +1,22 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
+import { CardExtensionData, PageExtensionData } from 'shared'
 import { renderInviteButton } from './renderInviteButton'
 import { renderReservedMessage } from './renderReservedMessage'
-import { CardExtensionData } from 'shared'
 import { renderSlotData } from './renderSlotData'
 
 export const whileCard: ZettelExtensions.Helper<
   'pagePanel' | 'publicPageView' | 'publicCardView',
   'activated',
   [],
-  void
+  void,
+  PageExtensionData,
+  CardExtensionData
 > = function ({ activatedApi }) {
   this.while('card', function ({ cardApi }) {
-    let cardExtensionData = cardApi.data.card.extensionData as CardExtensionData
     this.register(
       cardApi.watch(
-        data => cardApi.data.card.extensionData as CardExtensionData,
+        data => cardApi.data.card.extensionData,
         newCardExtensionData => {
-          cardExtensionData = newCardExtensionData
           cardBlockLifeSpanRegistration.deactivate()
           if (newCardExtensionData?.processed) {
             cardBlockLifeSpanRegistration.activate()
@@ -28,25 +28,18 @@ export const whileCard: ZettelExtensions.Helper<
 
     const cardBlockLifeSpanRegistration = this.register(
       () =>
-        this.while('cardBlock', function ({ cardBlockApi }) {
-          if (!cardExtensionData?.accepted) return
+        this.while('card', function ({ cardApi }) {
+          if (!cardApi.data.card.extensionData?.accepted) return
 
-          this.register(
-            cardBlockApi.registry.displayOptions(() => ({
-              hideBase: true,
-            }))
-          )
+          renderSlotData.bind(this)({ cardApi })
 
-          if (cardBlockApi.data.block.id === cardBlockApi.data.card.blocks[0]?.id) {
-            renderSlotData.bind(this)({ cardBlockApi })
-            if (cardExtensionData.reservedBy) {
-              renderReservedMessage.bind(this)({ cardBlockApi })
-            } else {
-              renderInviteButton.bind(this)({ activatedApi, cardBlockApi })
-            }
+          if (cardApi.data.card.extensionData.reservedBy) {
+            renderReservedMessage.bind(this)({ cardApi })
+          } else {
+            renderInviteButton.bind(this)({ activatedApi, cardApi })
           }
         }).finish,
-      { initiallyInactive: !cardExtensionData?.accepted }
+      { initiallyInactive: !cardApi.data.card.extensionData?.accepted }
     )
   })
 }

@@ -1,14 +1,18 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
-import { CardExtensionData } from 'shared'
+import { CardExtensionData, PageExtensionData } from 'shared'
 
-export const renderReservedMessage: ZettelExtensions.Helper<'cardBlock', 'cardBlock', [], void> = function ({
-  cardBlockApi,
-}) {
+export const renderReservedMessage: ZettelExtensions.Helper<
+  'card',
+  'card',
+  [],
+  void,
+  PageExtensionData,
+  CardExtensionData
+> = function ({ cardApi }) {
   this.register(
-    cardBlockApi.registry.appendedHtmlContent(() => ({
+    cardApi.registry.extendedHtmlContent(() => ({
       initialState: undefined,
       render: ({ renderContext, un }) => {
-        const cardExtensionData = cardBlockApi.data.card.extensionData as CardExtensionData
         return {
           html: `
 <style>
@@ -20,7 +24,7 @@ export const renderReservedMessage: ZettelExtensions.Helper<'cardBlock', 'cardBl
 <div id="${un.root}">
   ✔️ This time is reserved by
   <strong>
-    ${(cardExtensionData?.accepted && cardExtensionData.reservedBy?.name) || ''}
+    ${(cardApi.data.card.extensionData?.accepted && cardApi.data.card.extensionData.reservedBy?.name) || ''}
   </strong>
 </div>
 `,

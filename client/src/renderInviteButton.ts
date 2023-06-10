@@ -1,12 +1,17 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
+import { CardExtensionData, PageExtensionData } from 'shared'
 import { sendReservationRequest } from './services/sendReservationRequest'
 
-export const renderInviteButton: ZettelExtensions.Helper<'cardBlock', 'activated' | 'cardBlock', [], void> = function ({
-  activatedApi,
-  cardBlockApi,
-}) {
+export const renderInviteButton: ZettelExtensions.Helper<
+  'card',
+  'activated' | 'card',
+  [],
+  void,
+  PageExtensionData,
+  CardExtensionData
+> = function ({ activatedApi, cardApi }) {
   this.register(
-    cardBlockApi.registry.appendedHtmlContent(() => ({
+    cardApi.registry.extendedHtmlContent(() => ({
       initialState: undefined,
       render: ({ renderContext, un }) => ({
         html: `<div id="${un.root}"></div>`,
@@ -37,7 +42,7 @@ export const renderInviteButton: ZettelExtensions.Helper<'cardBlock', 'activated
                       placeholder: 'Your name',
                     })
                     if (name) {
-                      const { emailSuccess } = await sendReservationRequest(cardBlockApi.target.cardId, email, name)
+                      const { emailSuccess } = await sendReservationRequest(cardApi.target.cardId, email, name)
                       activatedApi.access.showMessage(
                         'Successfully reserved!',
                         emailSuccess ? 'An invitation email has been sent.' : 'Unable to send an invitation email.',

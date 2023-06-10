@@ -3,20 +3,16 @@ import { CardExtensionData } from 'shared'
 import { openAiApi } from './openAiApi'
 
 export async function extractCardExtensionData(
-  card: Pick<ZettelTypes.Extension.Entity.Card<CardExtensionData>, 'blocks'>
+  card: Pick<ZettelTypes.Extension.Model.Card<CardExtensionData>, 'text'>
 ): Promise<CardExtensionData> {
-  const cardText = card.blocks
-    .map(block => (block.type === ZettelTypes.Model.Block.Type.Attachment ? '' : block.text))
-    .filter(Boolean)
-    .flatMap(line => line.split('\n'))
-    .join(' ')
+  const cardText = card.text.replaceAll('\n', ' ')
   const chatCompletion = await openAiApi.createChatCompletion({
     model: 'gpt-3.5-turbo',
     messages: [
       {
         role: 'system',
         content: `
-You are given a meeting schedule and are supposed to answer with the start and end timestamps of the meeting.
+You are given a meeting schedule in one line and are supposed to answer with the start and end timestamps of the meeting.
 Also, you need to detect whether this meeting is reserved or not, and if reserved by who's name and email.
 As a reference; "9am" means "9:00", "9pm" means "21:00", "12am" means "0:00", "12pm" means "12:00".
 If the timezone is not specified in the description, consider the times are in UTC with no timezone offset.
@@ -44,7 +40,6 @@ If the timezone is not specified in the description, consider the times are in U
 [Reserved By Email]: hamed@gmail.com
 ###
 [Description]: ${cardText}
-[Now]: ${new Date().toString()}
 `,
       },
     ],

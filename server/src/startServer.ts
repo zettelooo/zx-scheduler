@@ -138,8 +138,6 @@ export function startServer(
           senderRegistrationKey: connection.getRegistrationKey(),
         })
         try {
-          const time = (card.blocks[0] as ZettelTypes.Extension.Entity.Block<ZettelTypes.Model.Block.Type.Paragraph>)
-            .text
           const { success } = await sendMail(
             'scheduler@zettel.ooo',
             ownerUser.name,
@@ -149,7 +147,7 @@ export function startServer(
             `
 <p>Hi, ${name}!</p>
 <p>${ownerUser.name} invited you to a call on the following time:</p>
-<p>• <strong>${time}</strong></>
+<p>• <strong>${card.text}</strong></>
 <p>You may follow up from <a href="mailto:${ownerUser.email}">this email address</a>.</p>
 <p>All the best,</p>
 <p>Zettel module; Scheduler.</p>

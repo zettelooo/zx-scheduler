@@ -1,9 +1,9 @@
 import { ZettelExtensions } from '@zettelooo/extension-api'
-import { PageExtensionData } from 'shared'
-import { whileCard } from './whileCard'
+import { CardExtensionData, PageExtensionData } from 'shared'
 import { submitAvailabilities } from './submitAvailabilities'
+import { whileCard } from './whileCard'
 
-void ((window as ZettelExtensions.WindowWithStarter).$starter = function (api) {
+void ((window as ZettelExtensions.WindowWithStarter<PageExtensionData, CardExtensionData>).$starter = function (api) {
   this.while('activated', function ({ activatedApi }) {
     this.while('signedIn', function ({ signedInApi }) {
       this.while('pagePanel', function ({ pagePanelApi }) {
@@ -60,12 +60,12 @@ void ((window as ZettelExtensions.WindowWithStarter).$starter = function (api) {
 
         this.register(
           pagePanelApi.watch(
-            data => data.page.extensionData as PageExtensionData,
+            data => data.page.extensionData,
             pageExtensionData => {
               if (pageExtensionData?.enabled) {
                 statusReadonlyRegistration.activate()
                 if (pageExtensionData?.enabled) {
-                  signedInApi.access.setPageExtensionData<PageExtensionData>(pagePanelApi.target.pageId, undefined)
+                  signedInApi.access.setPageExtensionData(pagePanelApi.target.pageId, undefined)
                   activate(pageExtensionData.command)
                 }
               }
