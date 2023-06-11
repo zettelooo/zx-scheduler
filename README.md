@@ -1,9 +1,14 @@
 # Zettel Module - Scheduler
 
-Describe your availabilities and this module helps you schedule a time with someone.
+Scheduler module lets others easily book your available meeting time. 
+
+Features includes: 
+- Put down available time slots.
+- Book a time slot with name and email.  
 
 It is created out of the [Zettel Extension Seed](https://github.com/zettelooo/zettel-extension-seed) project template.
 
+---
 The repository consists of three projects:
 
 1. The `client` project, this is the main extension implementation which will be a part of the Web app itself.
